@@ -1,0 +1,170 @@
+---
+title: "Coefficient de hurst"
+author: "ABCHICHE Thiziri /Aimen Ikhlef/Aoues Sofiane "
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+##Application of the (R/S) Method for S&P index 500
+
+```{r}
+# Function to calculate rescaled range for a given series
+rs_func <- function(x) {
+  N <- length(x)
+  m <- mean(x)
+  Y <- x - m
+  Z <- cumsum(Y)
+  R <- max(Z) - min(Z)
+  S <- sd(x)
+  return(R / S)
+}
+```
+
+
+```{r}
+# Function to calculate Hurst exponent
+hurst_exp <- function(x, maxlag) {
+  N <- length(x)
+  lags <- floor(seq(from = N / 2, to = 10, length.out = maxlag))
+  RS <- sapply(lags, function(lag) {
+    series <- matrix(x[1:(lag * (N %/% lag))], ncol = lag, byrow = TRUE)
+    rs <- apply(series, 1, rs_func)
+    return(mean(rs))
+  })
+  loglags <- log10(lags)
+  logRS <- log10(RS)
+  H <- lm(logRS ~ loglags)$coefficients[[2]]
+  return(list(H = H, lags = lags, RS = RS))
+}
+```
+
+
+```{r}
+library(tseries)
+library(ggplot2)
+library(quantmod) # getSymbols
+library(xts)
+sdate = as.Date("1999-12-31")
+edate = as.Date("2022-08-01")
+getSymbols("^GSPC", from=sdate, to=edate)
+
+price  = GSPC[,6]
+return = dailyReturn(price)
+df.stock = cbind(time=time(price),
+                  as.data.frame(price),
+                  as.data.frame(return))
+rownames(df.stock) = NULL
+colnames(df.stock) = c("time", "SPC.price", "SPC.return")
+```
+
+
+```{r}
+#head(df.stock)
+# Get the price
+price <- df.stock$SPC.price
+log_returns <- diff(log(price))
+# Calculate Hurst exponent
+result <- hurst_exp(log_returns, maxlag = 20)
+# Convert date strings to Date objects
+df.stock$time <- as.Date(df.stock$time, format = "%Y-%m-%d")
+dates<- df.stock$time[-1]
+# Plot results
+ggplot(data.frame(loglags = log10(result$lags), logRS = log10(result$RS)), aes(x = loglags, y = logRS)) +
+  geom_point(aes(color = "Data Points")) +  # Map color aesthetic for the points
+  geom_smooth(method = 'lm', formula = y ~ x, aes(color = "Best Fit Line")) +  # Map color aesthetic for the line
+  scale_color_manual("", 
+                     breaks = c("Data Points", "Best Fit Line"),
+                     values = c("Data Points" = "blue", "Best Fit Line" = "red")) +  # Define colors
+  labs(
+    title = paste0("Hurst Exponent Analysis"), 
+    subtitle = paste0("Estimated Hurst exponent: ", round(result$H, 2)),
+    caption = paste("Data from", min(dates), "to", max(dates)),
+    x = "log(Lag)", 
+    y = "log(R/S)"
+  ) +
+  theme_minimal() +  # optional: use a minimal theme
+  theme(
+    plot.title = element_text(hjust = 0.5),  # center the title
+    plot.subtitle = element_text(hjust = 0.5, face = "italic"),  # center and italicize the subtitle
+    plot.caption = element_text(hjust = 1, face = "italic")  # right-align and italicize the caption
+  )
+```
+
+```{r}
+# Function to calculate Hurst exponent over rolling windows
+hurst_exp_rolling <- function(price, time, window_size, maxlag) {
+  n_windows <- length(price) - window_size + 1
+  H_values <- rep(NA, n_windows)
+  Time_values <- rep(NA, n_windows)
+  for (i in 1:n_windows) {
+    window_price <- price[i:(i + window_size - 1)]
+    log_returns <- diff(log(window_price))
+    H_values[i] <- hurst_exp(log_returns, maxlag)$H
+    Time_values[i] <- time[i + window_size - 1] # Save the time of the last observation in each window
+  }
+  return(data.frame(Time = Time_values, H = H_values))
+}
+
+# Assuming df.stock$Time holds the time data
+time <- df.stock$time
+
+# Calculate Hurst exponent trajectory
+window_size <- 80  # adjust this to change the window size
+hurst_df <- hurst_exp_rolling(price, time, window_size, maxlag = 20)
+
+# Convert Time column to a date object if it's not
+hurst_df$Time <- as.Date(hurst_df$Time)
+
+# Plot Hurst Exponent Trajectory over time
+ggplot(hurst_df, aes(x=Time, y=H)) +
+  geom_line(aes(color = H)) +
+  geom_smooth(color = "red", linetype = "dashed") +
+  labs(x = "Time", 
+       y = "Hurst Exponent", 
+       title = "Hurst Exponent Trajectory") +
+  scale_color_gradientn(colors = rainbow(4)) +
+  theme_minimal() +
+  theme(text = element_text(size = 12))
+```
+## Application of (R/S) Method for Bitcoin 
+
+```{r}
+#data 
+ 
+df2=read.csv("C:/Users/SCD UM/Desktop/Projet soutenance/coefficient de hurst/coin_Bitcoin.csv",sep=",",dec=".")
+df2=df2[,-c(1,3)]
+
+# Filter rows based on row names
+df_filtered <- cd %>% filter(Currency %in% c('Bitcoin'),Date>=as.Date("2019-01-01"),Date<=as.Date
+("2022-12-31"))
+### Bitcoin_coin :
+# filter rows based on row names
+df_filtered <- cd %>% filter(Currency %in% c('Bitcoin'))
+# Create ggplot
+ggplot(df_filtered, aes(x = Date, y = Open)) + 
+  geom_line(aes(color = "Bitcoin Price")) +
+  geom_smooth(method = 'loess', se = FALSE, aes(color = "Smooth Trend"), size = 1) + 
+  ggtitle("Bitcoin Opening Price Series") +
+  labs(
+    x = "Date",
+    y = "Opening Prices ($)",
+    color = "Line",
+    
+    subtitle = paste("Total observations: ", nrow(df_filtered), " from ", min(df_filtered$Date), " to ", max(df_filtered$Date))
+  ) +
+  scale_color_manual(values = c("Bitcoin Price" = "blue", "Smooth Trend" = "red")) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    legend.key.width = unit(1,"cm"),
+    plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(size = 15, hjust = 0.5),
+    axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 1),
+    axis.title = element_text(size = 12, face = "bold")
+  ) +
+  scale_x_date(date_labels = "%b %Y", date_breaks = "6 months") 
