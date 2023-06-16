@@ -1,0 +1,175 @@
+### Application of the DFA Method:
+library(ggplot2)
+# Function to calculate the DFA fluctuation
+calculateFluctuation <- function(series, segment_length) {
+num_segments <- floor(length(series) / segment_length)
+detrended_series <- rep(0, length(series))
+for (i in 1:num_segments) {
+segment_start <- (i - 1) * segment_length + 1
+segment_end <- i * segment_length
+segment <- series[segment_start:segment_end]
+segment_trend <- lm(segment ~ seq_along(segment))$fitted.values
+9
+detrended_series[segment_start:segment_end] <- segment - segment_trend
+}
+sqrt(mean(detrended_seriesˆ2))
+}
+# Function to estimate the Hurst exponent using DFA
+estimateHurstExponent <- function(series, min_segment_length, max_segment_length) {
+segment_lengths <- seq(min_segment_length, max_segment_length)
+fluctuations <- sapply(segment_lengths, function(segment_length) {
+calculateFluctuation(series, segment_length)
+})
+log_segment_lengths <- log(segment_lengths)
+log_fluctuations <- log(fluctuations)
+fit <- lm(log_fluctuations ~ log_segment_lengths)
+hurst_exponent <- coef(fit)[2]
+return(hurst_exponent)
+}
+time_series <- df.stock$SPC.price
+# Set the minimum and maximum segment lengths
+min_segment_length <- 10
+max_segment_length <- length(time_series) / 4
+# Estimate the Hurst exponent
+hurst_exponent <- estimateHurstExponent(time_series, min_segment_length, max_segment_length)
+# Print the Hurst exponent
+print(paste("Hurst exponent:", hurst_exponent))
+# Plot the results using ggplot2
+results <- data.frame(segment_length = seq(min_segment_length, max_segment_length),
+fluctuation = sapply(seq(min_segment_length, max_segment_length),
+function(segment_length) {
+calculateFluctuation(time_series, segment_length)
+}))
+###GGplot of the results
+ggplot(results, aes(x = log(segment_length), y = log(fluctuation))) +
+geom_point() +
+geom_smooth(method = "lm", se = FALSE, color = "red") +
+labs(x = "log(segment length)", y = "log(fluctuation)", title = "DFA Hurst Exponent Estimation") +
+annotate("text", x = min(log(results$segment_length)), y = max(log(results$fluctuation)),
+label = paste("Hurst exponent:", round(hurst_exponent, 4)), hjust = 0, vjust = 1)
+# Function to calculate the DFA fluctuation
+calculateFluctuation <- function(series, segment_length) {
+num_segments <- floor(length(series) / segment_length)
+detrended_series <- rep(0, length(series))
+for (i in 1:num_segments) {
+segment_start <- (i - 1) * segment_length + 1
+segment_end <- i * segment_length
+segment <- series[segment_start:segment_end]
+segment_trend <- lm(segment ~ seq_along(segment))$fitted.values
+detrended_series[segment_start:segment_end] <- segment - segment_trend
+}
+sqrt(mean(detrended_seriesˆ2))
+}
+# Function to estimate the Hurst exponent using DFA
+estimateHurstExponent <- function(series, min_segment_length, max_segment_length) {
+segment_lengths <- seq(min_segment_length, max_segment_length)
+fluctuations <- sapply(segment_lengths, function(segment_length) {
+calculateFluctuation(series, segment_length)
+})
+log_segment_lengths <- log(segment_lengths)
+log_fluctuations <- log(fluctuations)
+11
+fit <- lm(log_fluctuations ~ log_segment_lengths)
+hurst_exponent <- coef(fit)[2]
+return(hurst_exponent)
+}
+# Function to calculate Hurst exponent over rolling windows
+hurst_exp_rolling <- function(price, time, window_size, min_segment_length, max_segment_length) {
+n_windows <- length(price) - window_size + 1
+H_values <- rep(NA, n_windows)
+Time_values <- rep(NA, n_windows)
+for (i in 1:n_windows) {
+window_price <- price[i:(i + window_size - 1)]
+H_values[i] <- estimateHurstExponent(window_price, min_segment_length, max_segment_length)
+Time_values[i] <- time[i + window_size - 1] # Save the time of the last observation in each window
+}
+return(data.frame(Time = Time_values, H = H_values))
+}
+# Assuming df.stock$Time holds the time data
+time <- df.stock$time
+time_series <- df.stock$SPC.price
+# Calculate Hurst exponent trajectory
+window_size <- 80 # adjust this to change the window size
+min_segment_length <- 10
+max_segment_length <- window_size / 4
+hurst_df <- hurst_exp_rolling(time_series, time, window_size, min_segment_length, max_segment_length)
+# Convert Time column to a date object if it's not
+hurst_df$Time <- as.Date(hurst_df$Time)
+# Plot Hurst Exponent Trajectory over time
+ggplot(hurst_df, aes(x=Time, y=H)) +
+geom_line(aes(color = H)) +
+geom_smooth(method = "loess", se = FALSE, color = "red", linetype = "dashed") +
+scale_color_gradientn(colors = rainbow(4), limits = c(0, 1)) +
+labs(x = "Time",
+y = "Hurst Exponent",
+title = "Hurst Exponent Trajectory",
+color = "Hurst Exponent") +
+theme_minimal() +
+theme(text = element_text(size = 12),
+plot.title = element_text(face = "bold"),
+axis.title = element_text(face = "bold"))
+12
+0.0
+0.5
+1.0
+2000 2005 2010 2015 2020
+Time
+Hurst Exponent
+0.00
+0.25
+0.50
+0.75
+1.00
+Hurst Exponent
+Hurst Exponent Trajectory
+# Visualizing t-stats vs critical values
+# Function to estimate the Hurst exponent using DFA
+estimateHurstExponent <- function(series, min_segment_length, max_segment_length) {
+segment_lengths <- seq(min_segment_length, max_segment_length)
+fluctuations <- sapply(segment_lengths, function(segment_length) {
+calculateFluctuation(series, segment_length)
+})
+log_segment_lengths <- log(segment_lengths)
+log_fluctuations <- log(fluctuations)
+fit <- lm(log_fluctuations ~ log_segment_lengths)
+hurst_exponent <- coef(fit)[2]
+standard_error <- summary(fit)$coefficients[2,2]
+return(list(hurst_exponent = hurst_exponent, standard_error = standard_error))
+}
+# Function to calculate Hurst exponent over rolling windows
+hurst_exp_rolling <- function(price, time, window_size, min_segment_length, max_segment_length) {
+n_windows <- length(price) - window_size + 1
+H_values <- rep(NA, n_windows)
+t_values <- rep(NA, n_windows)
+Time_values <- rep(NA, n_windows)
+for (i in 1:n_windows) {
+13
+window_price <- price[i:(i + window_size - 1)]
+estimate <- estimateHurstExponent(window_price, min_segment_length, max_segment_length)
+H_values[i] <- estimate$hurst_exponent
+t_values[i] <- (estimate$hurst_exponent - 0.5) / estimate$standard_error
+Time_values[i] <- time[i + window_size - 1] # Save the time of the last observation in each window
+}
+return(data.frame(Time = Time_values, H = H_values, tstat = t_values))
+}
+time <- df.stock$time
+time_series <- df.stock$SPC.price
+# Calculate Hurst exponent trajectory
+window_size <- 80 # adjust this to change the window size
+min_segment_length <- 10
+max_segment_length <- window_size / 4
+# Estimate the Hurst exponent
+hurst_df <- hurst_exp_rolling(time_series, time, window_size, min_segment_length, max_segment_length)
+hurst_df$Time <- seq(ymd('2006-01-03'), ymd('2021-05-05'), by='1 day')
+# Plot t-statistics over time
+ggplot(hurst_df, aes(x = Time)) +
+geom_line(aes(y = tstat, color = "t-statistics")) +
+geom_hline(aes(yintercept = 1.96, color = "upper critical value"), linetype = "dashed") +
+geom_hline(aes(yintercept = -1.96, color = "lower critical value"), linetype = "dashed") +
+labs(title = "t-statistics over Time", x = "Time", y = "t-statistic") +
+scale_color_manual(values = c("t-statistics" = "blue", "upper critical value" = "red", "lower critical value" = "red"),
+labels = c("t-statistics", "upper critical value", "lower critical value"),
+guide = guide_legend(title = "Legend")) +
+ylim(-5, 5) +
+geom_line(aes(y = 1.96, color = "upper critical value"), linetype = "dashed", show.legend = F) +
+geom_line(aes(y = -1.96, color = "lower critical value"), linetype = "dashed", show.legend = F)
