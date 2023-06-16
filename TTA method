@@ -1,0 +1,216 @@
+pplication TTA METHOD
+calculateTriangleArea <- function(a, b, c) {
+0.5 * abs(a[1]*b[2] + b[1]*c[2] + c[1]*a[2] - a[2]*b[1] - b[2]*c[1] - c[2]*a[1])
+}
+TTA_Hurst_Exponent <- function(x) {
+N <- length(x)
+tau_values <- seq(1, N, 2)
+log_tau <- log10(tau_values)
+log_TTA <- numeric(length(tau_values))
+for (i in 1:length(tau_values)) {
+tau <- tau_values[i]
+window_size <- 2*tau + 1
+n_windows <- N %/% window_size
+TTA <- 0
+for (j in 1:n_windows) {
+window_start <- (j-1)*window_size + 1
+window_end <- j*window_size
+window <- x[window_start:window_end]
+first <- c(window_start, window[1])
+48
+middle <- c(window_start + tau, window[tau+1])
+last <- c(window_end, window[2*tau+1])
+TTA <- TTA + calculateTriangleArea(first, middle, last)
+}
+log_TTA[i] <- log10(TTA)
+}
+fit <- lm(log_TTA ~ log_tau)
+return(coef(fit)[2])
+}
+x <- df_filtered$Open # This is your time series data
+Hurst_exponent <- TTA_Hurst_Exponent(x)
+print(Hurst_exponent)
+#### PLOT the result of the fit
+TTA_Hurst_Exponent <- function(x) {
+N <- length(x)
+tau_values <- seq(1, N, 2)
+log_tau <- log10(tau_values)
+log_TTA <- numeric(length(tau_values))
+for (i in 1:length(tau_values)) {
+tau <- tau_values[i]
+window_size <- 2*tau + 1
+n_windows <- N %/% window_size
+TTA <- 0
+for (j in 1:n_windows) {
+window_start <- (j-1)*window_size + 1
+window_end <- j*window_size
+window <- x[window_start:window_end]
+first <- c(window_start, window[1])
+middle <- c(window_start + tau, window[tau+1])
+last <- c(window_end, window[2*tau+1])
+TTA <- TTA + calculateTriangleArea(first, middle, last)
+}
+log_TTA[i] <- log10(TTA)
+}
+fit <- lm(log_TTA ~ log_tau)
+list(fit_coef = coef(fit)[2], log_tau = log_tau, log_TTA = log_TTA) # Return a list with Hurst exponent, log_tau and log_TTA
+}
+x <- df_filtered$Open # This is your time series data
+result <- TTA_Hurst_Exponent(x) # result is now a list with Hurst exponent, log_tau and log_TTA
+paste('The Hurst Exponent estimated is :',result$H) # print Hurst exponent
+49
+ggplot(data.frame(log_tau = result$log_tau, log_TTA = result$log_TTA), aes(x = log_tau, y = log_TTA)) +
+geom_point(aes(color = "data points")) +
+geom_smooth(method = 'lm', formula = y ~ x, aes(color = "linear fit"), se = FALSE) +
+scale_color_manual("", values = c("data points" = "black", "linear fit" = "red")) +
+labs(
+title = paste("Fit of TTA Hurst Exponent - Estimated Hurst:", round(Hurst_exponent, 3)),
+subtitle = "Scatterplot of log(TTA) vs log(Tau) with linear fit",
+x = "Log Tau",
+y = "Log TTA"
+)
+5
+6
+7
+0 1 2 3
+Log Tau
+Log TTA
+data points
+linear fit
+Scatterplot of log(TTA) vs log(Tau) with linear fit
+Fit of TTA Hurst Exponent − Estimated Hurst: 0.404
+### Plot the hurst trajectory
+TTA_Hurst_Exponent <- function(x, window_size) {
+N <- length(x)
+hurst_exponents <- numeric(N - window_size + 1)
+for (i in 1:(N - window_size + 1)) {
+x_window <- x[i:(i + window_size - 1)]
+hurst_exponents[i] <- calculate_hurst_exponent(x_window)
+}
+return(hurst_exponents)
+}
+50
+calculate_hurst_exponent <- function(x) {
+N <- length(x)
+tau_values <- seq(1, N, 2)
+log_tau <- log10(tau_values)
+log_TTA <- numeric(length(tau_values))
+for (i in 1:length(tau_values)) {
+tau <- tau_values[i]
+window_size <- 2*tau + 1
+n_windows <- N %/% window_size
+TTA <- 0
+for (j in 1:n_windows) {
+window_start <- (j-1)*window_size + 1
+window_end <- j*window_size
+window <- x[window_start:window_end]
+first <- c(window_start, window[1])
+middle <- c(window_start + tau, window[tau+1])
+last <- c(window_end, window[2*tau+1])
+TTA <- TTA + calculateTriangleArea(first, middle, last)
+}
+log_TTA[i] <- log10(TTA)
+}
+fit <- lm(log_TTA ~ log_tau)
+return(coef(fit)[2])
+}
+x <- df_filtered$Open # This is your time series data
+window_size <- 80# Set this to your desired window size
+hurst_exponents <- TTA_Hurst_Exponent(x, window_size)
+df <- data.frame(Time = seq(window_size, length(x)), Hurst_Exponent = hurst_exponents)
+# Create a new data frame for plotting, extracting the dates that correspond to the end of each window
+df <- data.frame(Date = dates[window_size:length(x)], Hurst_Exponent = hurst_exponents)
+ggplot(df, aes(x = Date, y = Hurst_Exponent)) +
+geom_line(aes(colour = Hurst_Exponent)) + # Colour the line based on Hurst_Exponent
+geom_smooth(se = FALSE, colour = "red", linetype = "dashed") + # Add a smoothed line (trend line)
+scale_color_gradientn(colors = rainbow(4), limits = c(0, NA)) + # Apply a gradient color scale
+scale_y_continuous(labels = percent, limits = c(0, NA)) + # Display y-axis labels as percentages and set limits
+theme_bw() + # Use a white-and-black theme, which is often more printer-friendly
+labs(
+x = "Window",
+y = "Hurst Exponent",
+title = "Hurst Exponent Over Time"
+) +
+51
+theme(
+plot.title = element_text(hjust = 0.5), # Center the plot title
+plot.caption = element_text(hjust = 1), # Right-align the plot caption
+axis.title.y = element_text(vjust = 1.5), # Adjust the y-axis label position
+axis.title.x = element_text(vjust = -0.5), # Adjust the x-axis label position
+text = element_text(size = 12) # Set the base text size to 12
+)
+0%
+25%
+50%
+75%
+2000 2005 2010
+Window
+Hurst Exponent
+0.00
+0.25
+0.50
+0.75
+Hurst_Exponent
+Hurst Exponent Over Time
+# Visualising t-test with critical values
+calculateTriangleArea <- function(a, b, c) {
+0.5 * abs(a[1]*b[2] + b[1]*c[2] + c[1]*a[2] - a[2]*b[1] - b[2]*c[1] - c[2]*a[1])
+}
+calculate_hurst_exponent <- function(x) {
+N <- length(x)
+tau_values <- seq(1, N, 2)
+log_tau <- log10(tau_values)
+log_TTA <- numeric(length(tau_values))
+for (i in 1:length(tau_values)) {
+tau <- tau_values[i]
+window_size <- 2*tau + 1
+n_windows <- N %/% window_size
+TTA <- 0
+52
+for (j in 1:n_windows) {
+window_start <- (j-1)*window_size + 1
+window_end <- j*window_size
+window <- x[window_start:window_end]
+first <- c(window_start, window[1])
+middle <- c(window_start + tau, window[tau+1])
+last <- c(window_end, window[2*tau+1])
+TTA <- TTA + calculateTriangleArea(first, middle, last)
+}
+log_TTA[i] <- log10(TTA)
+}
+fit <- lm(log_TTA ~ log_tau)
+hurst_exponent <- coef(fit)[2]
+standard_error <- summary(fit)$coefficients[2,2]
+t_stat <- (hurst_exponent - 0.5) / standard_error
+p_value <- 2 * (1 - pt(abs(t_stat), df.residual(fit)))
+return(list(H = hurst_exponent, tstat = t_stat, pval = p_value))
+}
+TTA_Hurst_Exponent <- function(x, window_size) {
+N <- length(x)
+hurst_exponents <- numeric(N - window_size + 1)
+t_stats <- numeric(N - window_size + 1)
+p_vals <- numeric(N - window_size + 1)
+for (i in 1:(N - window_size + 1)) {
+x_window <- x[i:(i + window_size - 1)]
+result <- calculate_hurst_exponent(x_window)
+hurst_exponents[i] <- result$H
+t_stats[i] <- result$tstat
+p_vals[i] <- result$pval
+}
+return(data.frame(H = hurst_exponents, tstat = t_stats, pval = p_vals))
+}
+x <- df_filtered$Open # This is your time series data
+window_size <- 80 # Set this to your desired window size
+hurst_df <- TTA_Hurst_Exponent(x, window_size)
+# Add Time to the hurst_df data frame
+hurst_df$Time <- seq(ymd('2006-01-12'), ymd('2014-01-01'), by='1 day')
+# Plot t-statistics over time
+ggplot(hurst_df, aes(x = Time)) +
+geom_line(aes(y = tstat, color = "T-statistics")) +
+geom_hline(aes(yintercept = 1.96, color = "Upper critical value"), linetype = "dashed") +
+geom_hline(aes(yintercept = -1.96, color = "Lower critical value"), linetype = "dashed") +
+53
+labs(title = "t-statistics over Time", x = "Time", y = "t-statistic") +
+scale_color_manual(values = c("T-statistics" = "blue", "Upper critical value" = "red", "Lower critical value" = "green"),
+guide = guide_legend(title = "Legend")) +
+coord_cartesian(ylim = c(-4, 4)) # Set y-axis limits
