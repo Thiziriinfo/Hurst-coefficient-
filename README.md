@@ -5,11 +5,11 @@ Ce mémoire se concentre sur l’estimation du coefficient de Hurst pour les sé
 
 
 # Concepts de bases
-1/ Séries Temporelles\\
-2/Séries de prix\\
-3/Trading de tendance (Trend Following)\\
-4/La réversion moyenne (Mean reverting)\\
-5/Coefficient de Hurst\\
+## 1/ Séries Temporelles
+## 2/Séries de prix
+## 3/Trading de tendance (Trend Following)
+## 4/La réversion moyenne (Mean reverting)
+## 5/Coefficient de Hurst
 
 
 
