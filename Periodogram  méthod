@@ -1,0 +1,142 @@
+Periodogram Method:
+# Assume ts is your time series
+ts <- df.stock$SPC.price# replace this with your actual time serie
+# Calculate the periodogram
+pgram <- spectrum(ts, plot=FALSE)
+# Get the frequencies and spectral density (periodogram values)
+# Exclude the zero frequency at the same time
+non_zero_indices <- pgram$freq > 0
+freq <- pgram$freq[non_zero_indices]
+spec <- pgram$spec[non_zero_indices]
+# Log transformation
+log_freq <- log10(freq)
+log_spec <- log10(spec)
+# Linear regression
+fit <- lm(log_spec ~ log_freq)
+# Estimate the Hurst exponent
+hurst_estimate <- - (coef(fit)[2] + 1) / 2
+15
+# Print Hurst estimate
+print(hurst_estimate)
+# Prepare data for ggplot
+data_for_plot <- data.frame(log_freq = log_freq, log_spec = log_spec)
+# Plot with ggplot
+ggplot(data_for_plot, aes(x=log_freq, y=log_spec)) +
+geom_point() +
+geom_smooth(method="lm", col="red", linetype="dashed") +
+labs(x = "Log Frequency",
+y = "Log Spectral Density",
+title = paste("Log-Log Plot with Hurst Exponent:", round(hurst_estimate, 3)))
+0
+3
+6
+9
+−3 −2 −1
+Log Frequency
+Log Spectral Density
+Log−Log Plot with Hurst Exponent: 0.343
+summary(fit)
+# Assume df is your data frame with Date and SPC.price columns
+df <- df.stock
+df$time <- as.Date(df$time, format = "%Y-%m-%d") # ensure Date is in the correct format
+# Function to calculate Hurst exponent
+calculate_hurst <- function(ts){
+pgram <- spectrum(ts, plot=FALSE)
+non_zero_indices <- pgram$freq > 0
+freq <- pgram$freq[non_zero_indices]
+16
+spec <- pgram$spec[non_zero_indices]
+log_freq <- log10(freq)
+log_spec <- log10(spec)
+fit <- lm(log_spec ~ log_freq)
+hurst_estimate <- - (coef(fit)[2] + 1) / 2
+return(hurst_estimate)
+}
+# Define window size
+window_size <- 100
+# Calculate Hurst exponent over rolling window and store in a data frame
+hurst_trajectory <- rollapply(zoo(df$SPC.price), window_size, function(x) calculate_hurst(x), by = 1, align = "right")
+# Create dataframe with date of last observation in each window and corresponding Hurst exponent
+hurst_df <- data.frame(Date = time(hurst_trajectory)[window_size:nrow(df)], Hurst = coredata(hurst_trajectory))
+hurst_df$Date <- seq(as.Date("2000-01-01"), as.Date("2015-04-13"), by="day")
+# Plot Hurst Exponent Trajectory over time
+ggplot(hurst_df, aes(x=Date, y=Hurst)) +
+geom_line(aes(color = Hurst)) + # color line based on Hurst value
+geom_smooth(se = FALSE, color = "red", linetype = "dashed") + # add smooth line to emphasize trends
+scale_color_gradient(low = "blue", high = "red") + # color gradient for Hurst values
+scale_x_date(date_breaks = "2 year", date_labels = "%Y") +
+labs(x = "Date",
+y = "Hurst Exponent",
+title = "Hurst Exponent Trajectory Over Time",
+color = "Hurst Exponent") +
+theme_minimal() +
+theme(text = element_text(size = 12),
+plot.title = element_text(hjust = 0.5), # center align title
+axis.title = element_text(face = "bold"), # bold axis titles
+legend.position = "bottom") # position legend at the bottom
+17
+0.0
+0.2
+0.4
+0.6
+2001 2003 2005 2007 2009 2011 2013 2015
+Date
+Hurst Exponent
+0.0 0.2 0.4 0.6
+Hurst Exponent
+Hurst Exponent Trajectory Over Time
+# visualiaztion of t-tests and critical values
+# Function to calculate Hurst exponent and t-statistic
+calculate_hurst <- function(ts) {
+pgram <- spectrum(ts, plot=FALSE)
+non_zero_indices <- pgram$freq > 0
+freq <- pgram$freq[non_zero_indices]
+spec <- pgram$spec[non_zero_indices]
+log_freq <- log10(freq)
+log_spec <- log10(spec)
+fit <- lm(log_spec ~ log_freq)
+hurst_estimate <- - (coef(fit)[2] + 1) / 2
+standard_error <- summary(fit)$coefficients[2,2]
+tstat <- (hurst_estimate - 0.5) / standard_error
+pval <- 2 * (1 - pt(abs(tstat), df.residual(fit)))
+return(list(hurst_estimate = hurst_estimate, tstat = tstat, pval = pval))
+}
+# Function to calculate Hurst exponent over rolling windows
+hurst_exp_rolling <- function(price, time, window_size) {
+n_windows <- length(price) - window_size + 1
+H_values <- rep(NA, n_windows)
+t_values <- rep(NA, n_windows)
+p_values <- rep(NA, n_windows)
+Time_values <- rep(NA, n_windows)
+18
+for (i in 1:n_windows) {
+window_price <- price[i:(i + window_size - 1)]
+result <- calculate_hurst(window_price)
+H_values[i] <- result$hurst_estimate
+t_values[i] <- result$tstat
+p_values[i] <- result$pval
+Time_values[i] <- time[i + window_size - 1] # Save the time of the last observation in each window
+}
+return(data.frame(Time = Time_values, H = H_values, tstat = t_values, pval = p_values))
+}
+time_series <- df.stock$SPC.price
+time <- df.stock$time
+window_size <- 100
+# Estimate the Hurst exponent
+hurst_df <- hurst_exp_rolling(time_series,time,window_size)
+hurst_df$Time <- seq(ymd('2006-01-03'), ymd('2021-04-15'), by='1 day')
+# Assuming a significance level of 0.05 for a two-tailed test
+alpha <- 0.05
+critical_value <- qt(1 - alpha/2, window_size - 2)
+ggplot(hurst_df, aes(x = Time)) +
+geom_line(aes(y = tstat, color = "t-statistics")) +
+geom_hline(aes(yintercept = critical_value, color = "Positive critical value", linetype = "dashed")) +
+geom_hline(aes(yintercept = -critical_value, color = "Negative critical value", linetype = "dashed")) +
+scale_color_manual(values = c("t-statistics" = "blue",
+"Positive critical value" = "red",
+"Negative critical value" = "green")) +
+scale_linetype_manual(values = c("dashed")) +
+theme_minimal() +
+labs(title = "t-statistics over Time", x = "Time", y = "t-statistic",
+color = "Legend", linetype = "Legend") +
+guides(color = guide_legend(override.aes = list(linetype = c("solid", "dashed", "dashed"))))
