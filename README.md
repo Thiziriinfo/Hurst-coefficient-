@@ -14,7 +14,7 @@ Ce mémoire se concentre sur l’estimation du coefficient de Hurst pour les sé
 
 
 # Estimation du coefficient de hurst  
-1/Méthode fractale R/S\\
-2/Méthode DFA (Detrended Fluctuation Analysis)\\
-3/Méthode TTA (Triangles Total Areas)\\
-4/Méthode Périodogramme\\
+## 1/Méthode fractale R/S\\
+## 2/Méthode DFA (Detrended Fluctuation Analysis)\\
+## 3/Méthode TTA (Triangles Total Areas)\\
+### 4/Méthode Périodogramme\\
