@@ -5,16 +5,16 @@ Ce mémoire se concentre sur l’estimation du coefficient de Hurst pour les sé
 
 
 # Concepts de bases
-## 1/ Séries Temporelles
-## 2/Séries de prix
-## 3/Trading de tendance (Trend Following)
-## 4/La réversion moyenne (Mean reverting)
-## 5/Coefficient de Hurst
+### 1/ Séries Temporelles
+### 2/Séries de prix
+### 3/Trading de tendance (Trend Following)
+### 4/La réversion moyenne (Mean reverting)
+### 5/Coefficient de Hurst
 
 
 
 # Estimation du coefficient de hurst  
-## 1/Méthode fractale R/S\\
-## 2/Méthode DFA (Detrended Fluctuation Analysis)\\
-## 3/Méthode TTA (Triangles Total Areas)\\
-### 4/Méthode Périodogramme\\
+### 1/Méthode fractale R/S
+### 2/Méthode DFA (Detrended Fluctuation Analysis)
+### 3/Méthode TTA (Triangles Total Areas)
+### 4/Méthode Périodogramme
